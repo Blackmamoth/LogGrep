@@ -108,4 +108,5 @@ cat server.log | loggrep --contains timeout --count
 ## Upcoming Features 🛣️
 
 - Full JSON parsing with structured filtering
+- Time-based filtering
 - Performance improvements for large datasets
