@@ -14,7 +14,17 @@ FIELD=""
 TOP=""
 COUNT=false
 PRETTY_PRINT=false
+BAT_TOOL_INSTALLED=false
+JQ_TOOL_INSTALLED=false
 GREP_SUPPORTS_PCRE=false
+
+if command -v bat &>/dev/null; then
+  BAT_TOOL_INSTALLED=true
+fi
+
+if command -v jq &>/dev/null; then
+  JQ_TOOL_INSTALLED=true
+fi
 
 if echo "test" | grep -P "t(?=e)" >/dev/null 2>&1; then
   GREP_SUPPORTS_PCRE=true
@@ -192,7 +202,12 @@ parse_text_logs() {
 
   if [[ "$COUNT" == false ]]; then
     if [[ "$PRETTY_PRINT" == true ]]; then
-      printf "\n%s" "$FILE_CONTENT" | bat --language=log --style=plain --color=always --paging=never
+      if [[ $BAT_COMMAND_INSTALLED == true ]]; then
+        printf "\n%s" "$FILE_CONTENT" | bat --language=log --style=plain --color=always --paging=never
+      else
+        echo "The 'bat' command is not installed. It's required for pretty-printing"
+        printf "\n%s" "$FILE_CONTENT"
+      fi
     else
       printf "\n%s" "$FILE_CONTENT"
     fi
