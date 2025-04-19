@@ -1,0 +1,4 @@
+json_logs.logs
+text_logs.logs
+
+*.log
