@@ -1,6 +1,6 @@
 # LogGrep 🕵️📜
 
-**LogGrep** is a lightweight and fast log filtering tool written in Bash. It helps you extract meaningful insights from log files?whether plain text or JSON?using flexible filtering options like time ranges, regex patterns, and structured field queries.
+**LogGrep** is a lightweight and fast log filtering tool written in Bash. It helps you extract meaningful insights from log files whether plain text or JSON using flexible filtering options like time ranges, regex patterns, and structured field queries.
 
 ## Features ✨
 
@@ -9,7 +9,7 @@
 - 🗒️ JSON mode for structured logs (`--json`, `--field`, `--has`)
 - 🗝️ Extract specific fields or keys
 - 🔢 Count or limit the number of matching results
-- 🎨 Pretty print using `bat` (optional)
+- 🎨 Pretty print using `bat` and `jq` (optional)
 - ✅ Graceful validation and helpful error messages
 
 ## Installation 📦
@@ -44,12 +44,16 @@ loggrep [OPTIONS]
 - `--since <duration>` 
   Filter logs newer than the given time. 
   Accepted formats: `<number>[m|h|d|M|y]` 
-  Examples: `30m` (30 minutes), `2h` (2 hours), `1d` (1 day), `3M` (3 months), `1y` (1 year)
+  Examples: `30m` (30 minutes), `2h` (2 hours), `1d` (1 day), `3M` (3 months), `1y` (1 year) 
+  **Note**: Using the --since flag can slow down filtering, especially with large log files, as it requires processing each log entry's timestamp.
+  
+  **Note**: Currently, LogGrep only supports timestamps in **ISO 8601 format** (e.g., `2025-04-21T16:30:00`). Logs with different timestamp formats are not supported.
 
 ### General Text Filters 🧹
 
 - `--level <value>` 
   Match log level (case-sensitive), e.g., `INFO`, `ERROR`, `DEBUG`
+  **Works for both plain text and JSON logs**.
 
 - `--contains <string>` 
   Case-insensitive substring match
@@ -89,6 +93,33 @@ loggrep [OPTIONS]
 - `-h, --help` 
   Show this help message
 
+## Order of Operations ⚙️
+
+LogGrep applies filters in the following order to optimize performance and ensure expected behavior:
+
+1. **Text Filters**:
+   
+   - `--level`
+   - `--contains`
+   - `--regex`
+
+2. **JSON Filters** (only if `--json` is used):
+   
+   - `--has`
+   - `--field`
+   - `--key`
+
+3. **Time Filtering**:
+   
+   - `--since` (applied last to reduce overhead)
+
+4. **Output Modifiers**:
+   
+   - `--top` (limits number of results)
+   - `--count` (shows total count of all matches and overrides `--top`)
+
+🛈 If both `--count` and `--top` are specified, `--count` takes precedence.
+
 ## Examples 🧪
 
 ```bash
@@ -107,6 +138,6 @@ cat server.log | loggrep --contains timeout --count
 
 ## Upcoming Features 🛣️
 
-- Full JSON parsing with structured filtering
-- Time-based filtering
+- ~~Full JSON parsing with structured filtering~~~
+- ~~Time-based filtering~~~
 - Performance improvements for large datasets

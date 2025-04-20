@@ -19,39 +19,25 @@ generate_ip() {
   echo "$((RANDOM % 256)).$((RANDOM % 256)).$((RANDOM % 256)).$((RANDOM % 256))"
 }
 
-generate_random_timestamp() {
-  # Get current epoch and subtract up to 172800 seconds (2 days)
-  OFFSET=$((RANDOM % 172800))
+generate_timestamp() {
+  OFFSET=$((RANDOM % 172800)) # Up to 2 days ago
   RANDOM_EPOCH=$(($(date +%s) - OFFSET))
   date -d "@$RANDOM_EPOCH" '+%Y-%m-%d %H:%M:%S'
-}
-
-generate_iso_timestamp() {
-  OFFSET=$((RANDOM % 172800))
-  RANDOM_EPOCH=$(($(date +%s) - OFFSET))
-  date -d "@$RANDOM_EPOCH" --iso-8601=seconds
 }
 
 I=0
 
 while true; do
-  TEXT_TIMESTAMP=$(generate_random_timestamp)
-  ISO_TIMESTAMP=$(generate_iso_timestamp)
+  TIMESTAMP=$(generate_timestamp)
   LEVEL=${LOG_LEVELS[$RANDOM % ${#LOG_LEVELS[@]}]}
   MESSAGE=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
   IP=$(generate_ip)
-  #
-  # echo "$TEXT_TIMESTAMP [$LEVEL] $MESSAGE from $IP" >>"$TEXT_LOG_FILE"
-  # echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"level\": \"$LEVEL\", \"message\": \"$MESSAGE\", \"ip\": \"$IP\"}" >>"$JSON_LOG_FILE"
 
-  if ((I % 2 == 0)); then
-    echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"L\": \"$LEVEL\", \"M\": \"$MESSAGE\", \"ip\": \"$IP\"}" >>"json.log"
-  else
-    echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"L\": \"$LEVEL\", \"M\": \"$MESSAGE\", \"ip\": \"$IP\", \"extra_key\": \"extra_value\"}" >>"json.log"
-  fi
+  # Text log (if needed)
+  echo "$TIMESTAMP [$LEVEL] $MESSAGE from $IP" >>"$TEXT_LOG_FILE"
 
-  # Increment I
-  ((I++))
+  # JSON logs with supported timestamp
+  echo "{\"timestamp\": \"$TIMESTAMP\", \"level\": \"$LEVEL\", \"message\": \"$MESSAGE\", \"ip\": \"$IP\"}" >>"$JSON_LOG_FILE"
 
-  sleep 0.01 # Tune as needed
+  sleep 0.01
 done
