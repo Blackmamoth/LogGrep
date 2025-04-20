@@ -53,6 +53,7 @@ loggrep [OPTIONS]
 
 - `--level <value>` 
   Match log level (case-sensitive), e.g., `INFO`, `ERROR`, `DEBUG`
+
   **Works for both plain text and JSON logs**.
 
 - `--contains <string>` 
@@ -86,7 +87,7 @@ loggrep [OPTIONS]
   Print the number of matching lines instead of their content
 
 - `--pretty` 
-  Pretty-print the output (requires `bat`)
+  Pretty-print the output (requires `bat` and `jq`)
 
 ### Other 🛠️
 
