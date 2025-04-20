@@ -32,15 +32,26 @@ generate_iso_timestamp() {
   date -d "@$RANDOM_EPOCH" --iso-8601=seconds
 }
 
+I=0
+
 while true; do
   TEXT_TIMESTAMP=$(generate_random_timestamp)
   ISO_TIMESTAMP=$(generate_iso_timestamp)
   LEVEL=${LOG_LEVELS[$RANDOM % ${#LOG_LEVELS[@]}]}
   MESSAGE=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
   IP=$(generate_ip)
+  #
+  # echo "$TEXT_TIMESTAMP [$LEVEL] $MESSAGE from $IP" >>"$TEXT_LOG_FILE"
+  # echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"level\": \"$LEVEL\", \"message\": \"$MESSAGE\", \"ip\": \"$IP\"}" >>"$JSON_LOG_FILE"
 
-  echo "$TEXT_TIMESTAMP [$LEVEL] $MESSAGE from $IP" >>"$TEXT_LOG_FILE"
-  echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"level\": \"$LEVEL\", \"message\": \"$MESSAGE\", \"ip\": \"$IP\"}" >>"$JSON_LOG_FILE"
+  if ((I % 2 == 0)); then
+    echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"L\": \"$LEVEL\", \"M\": \"$MESSAGE\", \"ip\": \"$IP\"}" >>"json.log"
+  else
+    echo "{\"timestamp\": \"$ISO_TIMESTAMP\", \"L\": \"$LEVEL\", \"M\": \"$MESSAGE\", \"ip\": \"$IP\", \"extra_key\": \"extra_value\"}" >>"json.log"
+  fi
+
+  # Increment I
+  ((I++))
 
   sleep 0.01 # Tune as needed
 done

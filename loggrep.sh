@@ -54,7 +54,7 @@ Time Filtering:
                             (e.g., 30m, 2h, 1d). Default: 30m
 
 General Text Filters:
-  --level <value>           Case-insensitive match for log level (e.g., INFO, ERROR)
+  --level <value>           Case-sensitive match for log level (e.g., INFO, ERROR)
   --contains <string>       Case-insensitive substring match
   --regex <pattern>         Regular expression for filtering logs. Use [0-9] for digits.
 
@@ -111,13 +111,20 @@ validate_time() {
 }
 
 validate_field() {
-  local input=$1
+  local input="$1"
 
   if [[ "$input" =~ ^[a-zA-Z0-9_]+=[a-zA-Z0-9_]+$ ]]; then
     return 0
   fi
 
   log_error "invalid value passed to --field [$input]"
+}
+
+get_key_value() {
+  local input="$1"
+
+  KEY="${input%%=*}"
+  VALUE="${input#*=}"
 }
 
 validate_flags() {
@@ -132,6 +139,10 @@ validate_flags() {
     FILE_CONTENT=$(cat)
   else
     log_error "No input provided. Use --file or pipe input."
+  fi
+
+  if [[ "$JSON" == true && "$JQ_TOOL_INSTALLED" == false ]]; then
+    log_error "loggrep uses jq to parse JSON logs. Please install jq to use the --json flag."
   fi
 
   if [[ -n "$HAS" ]]; then
@@ -173,10 +184,6 @@ validate_flags() {
 }
 
 parse_text_logs() {
-  if [[ -z "$FILE_CONTENT" ]]; then
-    echo "No logs"
-    exit 0
-  fi
 
   if [[ -n "$LEVEL" ]]; then
     FILE_CONTENT=$(grep -Ei "\[?$LEVEL\]?" <<<"$FILE_CONTENT")
@@ -202,10 +209,10 @@ parse_text_logs() {
 
   if [[ "$COUNT" == false ]]; then
     if [[ "$PRETTY_PRINT" == true ]]; then
-      if [[ $BAT_COMMAND_INSTALLED == true ]]; then
+      if [[ "$BAT_TOOL_INSTALLED" == true ]]; then
         printf "\n%s" "$FILE_CONTENT" | bat --language=log --style=plain --color=always --paging=never
       else
-        echo "The 'bat' command is not installed. It's required for pretty-printing"
+        echo "The 'bat' tool is not installed. It's required for pretty-printing text logs."
         printf "\n%s" "$FILE_CONTENT"
       fi
     else
@@ -214,6 +221,49 @@ parse_text_logs() {
 
   else
     echo "$count"
+  fi
+}
+
+parse_json_logs() {
+  if [[ -n "$LEVEL" ]]; then
+    FILE_CONTENT=$(echo "$FILE_CONTENT" | jq --arg level $LEVEL 'select(.level == $level or .LEVEL == $level or .L == $level)' -c -M)
+  fi
+
+  if [[ -n "$HAS" ]]; then
+    FILE_CONTENT=$(echo "$FILE_CONTENT" | jq --arg key $HAS 'select(has($key))' -c -M)
+  fi
+
+  if [[ -n "$KEY" ]]; then
+    FILE_CONTENT=$(echo "$FILE_CONTENT" | jq --arg key $KEY '.[$key]' -c -M)
+  fi
+
+  if [[ -n "$FIELD" ]]; then
+    get_key_value "$FIELD"
+    FILE_CONTENT=$(echo "$FILE_CONTENT" | jq --arg key $KEY --arg value $VALUE 'select(.[$key] == $value)' -c -M)
+  fi
+
+  if [[ -n "$REGEX" ]]; then
+    if [[ $GREP_SUPPORTS_PCRE == "true" ]]; then
+      FILE_CONTENT=$(grep -Pi "$REGEX" <<<"$FILE_CONTENT")
+    else
+      FILE_CONTENT=$(grep -Ei "$REGEX" <<<"$FILE_CONTENT")
+    fi
+  fi
+
+  local count=$(wc -l <<<"$FILE_CONTENT")
+
+  if [[ -n "$TOP" ]]; then
+    FILE_CONTENT=$(echo "$FILE_CONTENT" | head -n $TOP)
+  fi
+
+  if [[ "$COUNT" == false ]]; then
+    if [[ "$PRETTY_PRINT" == true ]]; then
+      printf "%s" $FILE_CONTENT | jq '.'
+    else
+      printf "%s" $FILE_CONTENT | jq -c -M
+    fi
+  else
+    printf "%s" "$count"
   fi
 }
 
@@ -285,10 +335,15 @@ main() {
 
   validate_flags
 
+  if [[ -z "$FILE_CONTENT" ]]; then
+    echo "No logs"
+    exit 0
+  fi
+
   if [[ "$JSON" == false ]]; then
     parse_text_logs
   else
-    echo "JSON parsing in progress"
+    parse_json_logs
   fi
 }
 

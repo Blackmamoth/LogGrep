@@ -49,7 +49,7 @@ loggrep [OPTIONS]
 ### General Text Filters 🧹
 
 - `--level <value>` 
-  Match log level (case-insensitive), e.g., `INFO`, `ERROR`, `DEBUG`
+  Match log level (case-sensitive), e.g., `INFO`, `ERROR`, `DEBUG`
 
 - `--contains <string>` 
   Case-insensitive substring match
