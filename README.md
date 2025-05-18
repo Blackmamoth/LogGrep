@@ -17,7 +17,7 @@
 No installation required. Just clone the repo and make the script executable:
 
 ```bash
-git clone https://github.com/your-username/loggrep.git
+git clone https://github.com/Blackmamoth/loggrep.git
 cd loggrep
 chmod +x loggrep.sh
 ```
